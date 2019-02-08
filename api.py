@@ -1,6 +1,8 @@
 from nba_api.stats.static import teams, players
-from nba_api.stats.endpoints import playercareerstats
-import pandas as pd
+from nba_api.stats.endpoints import playercareerstats, commonplayerinfo, playerawards
+from objectpath import *
+import json
+from pprint import pprint
 
 
 def get_teams() -> list:
@@ -24,19 +26,41 @@ def get_players() -> list:
     return players.get_players()
 
 
-def get_player_stats(player_id: int):
+def get_player_info(player_id: int) -> dict:
     """
     Uses nba_api to get career stats for given player argument
 
     :param player_id:
     :return:
     """
-    career = playercareerstats.PlayerCareerStats(player_id=player_id)
-    return career.get_data_frames()[0]
+    data = dict()
+    career = commonplayerinfo.CommonPlayerInfo(player_id=player_id)
+    pprint(json.loads(career.get_normalized_json()))
+    career_tree = Tree(json.loads(career.get_normalized_json()))
+    team_city = career_tree.execute("$.CommonPlayerInfo[0].TEAM_CITY")
+    team_name = career_tree.execute("$.CommonPlayerInfo[0].TEAM_NAME")
+    data['team'] = team_city + ' ' + team_name
+    data['player_name'] = career_tree.execute("$.CommonPlayerInfo[0].DISPLAY_FIRST_LAST")
+    data['college'] = career_tree.execute("$.CommonPlayerInfo[0].SCHOOL")
+    data['current_season'] = career_tree.execute("$.PlayerHeadlineStats[0].TimeFrame")
+    data['points'] = career_tree.execute("$.PlayerHeadlineStats[0].PTS")
+    data['assists'] = career_tree.execute("$.PlayerHeadlineStats[0].AST")
+    data['rebounds'] = career_tree.execute("$.PlayerHeadlineStats[0].REB")
+    data['position'] = career_tree.execute("$.CommonPlayerInfo[0].POSITION")
+    data['years_active'] = career_tree.execute("$.CommonPlayerInfo[0].SEASON_EXP")
+    data['height'] = career_tree.execute("$.CommonPlayerInfo[0].HEIGHT")
+    data['year_drafted'] = career_tree.execute("$.CommonPlayerInfo[0].DRAFT_YEAR")
+
+    return data
+
+
+def get_player_awards(player_id: int) -> dict:
+    data = dict()
+    awards = playerawards.PlayerAwards(player_id=player_id)
+    pprint(json.loads(awards.get_normalized_json()))
 
 
 def get_player_id(p: str) -> int:
-    print(p)
     all_players = get_players()
     p = [player for player in all_players if player['full_name'] == p][0]
 

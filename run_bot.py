@@ -1,11 +1,8 @@
 from config import Config
-from api import get_teams, get_player_stats, get_players, get_player_id
-import random
+from api import get_player_info, get_player_id, get_players
+import discord
+import requests
 import json
-import asyncio
-import aiohttp
-from discord.ext.commands import Bot
-from discord import Game
 import logging
 
 logger = logging.getLogger('discord')
@@ -14,64 +11,137 @@ handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w'
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 logger.addHandler(handler)
 
-client = Bot(command_prefix=Config.BOT_COMMAND_PREFIX)
+
+class CommandHandler:
+
+    def __init__(self, client):
+        self.client = client
+        self.commands = []
+
+    def add_command(self, command):
+        self.commands.append(command)
+
+    def command_handler(self, message):
+        for command in self.commands:
+            if message.content.startswith(command['trigger']):
+                args = message.content.split(' ')
+                if args[0] == command['trigger']:
+                    args.pop(0)
+                    if command['args_num'] == 0:
+                        return self.client.send_message(
+                            message.channel,
+                            str(command['function'](message, self.client, args)))
+                        break
+                    else:
+                        if len(args) >= command['args_num']:
+                            return self.client.send_message(
+                                message.channel,
+                                str(command['function'](message, self.client, args))
+                            )
+                            break
+                        else:
+                            return self.client.send_message(
+                                message.channel,
+                                'command "{}" requires {} argument(s) "{}"'.format(command['trigger'],
+                                command['args_num'], ', '.join(command['args_name']))
+                            )
+                            break
+                else:
+                    break
 
 
-@client.command(name='8ball',
-                description="Answers a yes/no question.",
-                brief="Answers from the beyond.",
-                aliases=['eight_ball', 'eightball', '8-ball'],
-                pass_context=True)
-async def eight_ball(context):
-    possible_responses = [
-        'That is a resounding no',
-        'It is not looking likely',
-        'Too hard to tell',
-        'It is quite possible',
-        'Definitely',
-    ]
-    await client.say(random.choice(possible_responses) + ", " + context.message.author.mention)
+client = discord.Client()
+token = Config.DISCORD_TOKEN
+
+ch = CommandHandler(client)
 
 
-@client.command()
-async def square(number):
-    squared_value = int(number) * int(number)
-    await client.say(str(number) + " squared is " + str(squared_value))
+def commands_command(message, client, args):
+    try:
+        count = 1
+        coms = '**Commands List**\n'
+        for command in ch.commands:
+            coms += '{}.) {} : {}\n'.format(count, command['trigger'], command['description'])
+            count += 1
+        return coms
+    except Exception as e:
+        print(e)
 
 
-@client.command()
-async def player_stats(*args):
-    player = ' '.join(args)
-    player_id = get_player_id(player)
-    stats = get_player_stats(player_id)
+ch.add_command({
+    'trigger': '!commands',
+    'function': commands_command,
+    'args_num': 0,
+    'args_name': [],
+    'description': 'Prints a list of all the commands.'
+})
 
-    await client.say(stats)
+
+def player_info_command(message, client, args):
+    try:
+        player = ' '.join(args)
+        player_id = get_player_id(player)
+        info = get_player_info(player_id)
+
+        template = '```Name: {}\n' \
+                   'Team: {}\n' \
+                   'College/Country: {}\n' \
+                   '{} season stats: {} PTS - {} REB - {} AST\n' \
+                   'Position: {}\n' \
+                   'Years active: {}\n' \
+                   'Height: {}\n' \
+                   'Year drafted: {}\n```'
+
+        out = template.format(info['player_name'],
+                              info['team'],
+                              info['college'],
+                              info['current_season'],
+                              info['points'],
+                              info['rebounds'],
+                              info['assists'],
+                              info['position'],
+                              info['years_active'],
+                              info['height'],
+                              info['year_drafted'])
+
+        return out
+    except Exception as e:
+        print(e)
+
+
+ch.add_command({
+    'trigger': '!player_info',
+    'function': player_info_command,
+    'args_num': 2,
+    'args_name': ['FirstName LastName'],
+    'description': 'Basic player information'
+})
 
 
 @client.event
 async def on_ready():
-    await client.change_presence(game=Game(name="with humans"))
-    print("Logged in as " + client.user.name)
+    try:
+        print(client.user.name)
+        print(client.user.id)
+    except Exception as e:
+        print(e)
 
 
-@client.command()
-async def bitcoin():
-    url = 'https://api.coindesk.com/v1/bpi/currentprice/BTC.json'
-    async with aiohttp.ClientSession() as session:  # Async HTTP request
-        raw_response = await session.get(url)
-        response = await raw_response.text()
-        response = json.loads(response)
-        await client.say("Bitcoin price is: $" + response['bpi']['USD']['rate'])
+@client.event
+async def on_message(message):
+    # if the message is from the bot itself ignore it
+    if message.author == client.user:
+        pass
+    else:
+        # try to evaluate with the command handler
+        try:
+            await ch.command_handler(message)
+        # message doesn't contain a command trigger
+        except TypeError as e:
+            pass
+        # generic python error
+        except Exception as e:
+            print(e)
 
 
-async def list_servers():
-    await client.wait_until_ready()
-    while not client.is_closed:
-        print("Current servers:")
-        for server in client.servers:
-            print(server.name)
-        await asyncio.sleep(600)
-
-
-client.loop.create_task(list_servers())
-client.run(Config.DISCORD_TOKEN)
+client.run(token)

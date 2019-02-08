@@ -1,9 +1,8 @@
 from api import *
 from pprint import pprint
 
-id = 76003
-data = get_player_stats(id)
-
-player = 'Tim Duncan'
+player = 'LeBron James'
 id = get_player_id(player)
-print(id)
+awards = get_player_awards(id)
+
+pprint(awards)
