@@ -23,6 +23,11 @@ def get_teams() -> list:
 
 
 def get_players() -> list:
+    """
+    Uses nba_api to get all NBA players
+
+    :return: list of players and detailed data
+    """
     return players.get_players()
 
 
@@ -52,6 +57,14 @@ def get_player_info(player_id: int) -> dict:
     data['year_drafted'] = career_tree.execute("$.CommonPlayerInfo[0].DRAFT_YEAR")
 
     return data
+
+
+def get_games_today():
+    pass
+
+
+def get_standings():
+    pass
 
 
 def get_player_awards(player_id: int) -> dict:

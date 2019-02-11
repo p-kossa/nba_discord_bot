@@ -49,6 +49,17 @@ class CommandHandler:
                 else:
                     break
 
+    def embed_handler(self, message, title, description, color, text):
+        embed = discord.Embed(
+            title=title,
+            description=description,
+            color=color
+        )
+
+        embed.set_footer(text=text)
+
+        return self.client.send_message(message.channel, embed=embed)
+
 
 client = discord.Client()
 token = Config.DISCORD_TOKEN
@@ -78,19 +89,27 @@ ch.add_command({
 
 
 def player_info_command(message, client, args):
+    """
+    Displays basic player information in Discord server
+
+    :param message:
+    :param client:
+    :param args:
+    :return: Discord message
+    """
     try:
         player = ' '.join(args)
         player_id = get_player_id(player)
         info = get_player_info(player_id)
 
-        template = '```Name: {}\n' \
+        template = 'Name: {}\n' \
                    'Team: {}\n' \
                    'College/Country: {}\n' \
                    '{} season stats: {} PTS - {} REB - {} AST\n' \
                    'Position: {}\n' \
                    'Years active: {}\n' \
                    'Height: {}\n' \
-                   'Year drafted: {}\n```'
+                   'Year drafted: {}\n'
 
         out = template.format(info['player_name'],
                               info['team'],
@@ -115,6 +134,33 @@ ch.add_command({
     'args_num': 2,
     'args_name': ['FirstName LastName'],
     'description': 'Basic player information'
+})
+
+
+def embed(message, client, args):
+    try:
+        embed = discord.Embed(
+            title='Title',
+            description='Embed test',
+            color=discord.Color.blue()
+        )
+
+        embed.set_footer(text='This is a footer')
+        embed.add_field(name='Field name', value='Field value', inline=False)
+        embed.add_field(name='field name 2', value='value 2', inline=True)
+        embed.add_field(name='name 3', value='value 3', inline=True)
+
+        return embed
+    except Exception as e:
+        print(e)
+
+
+ch.add_command({
+    'trigger': '!embed',
+    'function': embed,
+    'args_num': 0,
+    'args_name': [],
+    'description': 'Embed testing'
 })
 
 
