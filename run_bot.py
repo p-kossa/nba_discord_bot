@@ -27,38 +27,22 @@ class CommandHandler:
                 args = message.content.split(' ')
                 if args[0] == command['trigger']:
                     args.pop(0)
-                    if command['args_num'] == 0:
-                        return self.client.send_message(
-                            message.channel,
-                            str(command['function'](message, self.client, args)))
-                        break
-                    else:
-                        if len(args) >= command['args_num']:
-                            return self.client.send_message(
-                                message.channel,
-                                str(command['function'](message, self.client, args))
-                            )
+                    if command['args_num'] == 0 or len(args) >= command['args_num']:
+                        if command['is_embed'] is True:
+                            return self.client.send_message(message.channel,
+                                                            embed=command['function'](message, self.client, args))
                             break
                         else:
-                            return self.client.send_message(
-                                message.channel,
-                                'command "{}" requires {} argument(s) "{}"'.format(command['trigger'],
-                                command['args_num'], ', '.join(command['args_name']))
-                            )
-                            break
+                            return self.client.send_message(message.channel,
+                                                            str(command['function'](message, self.client, args)))
+                    else:
+                        return self.client.send_message(
+                            message.channel,
+                            'command "{}" requires {} argument(s) "{}"'.format(command['trigger'],
+                            command['args_num'], ', '.join(command['args_name'])))
+                        break
                 else:
                     break
-
-    def embed_handler(self, message, title, description, color, text):
-        embed = discord.Embed(
-            title=title,
-            description=description,
-            color=color
-        )
-
-        embed.set_footer(text=text)
-
-        return self.client.send_message(message.channel, embed=embed)
 
 
 client = discord.Client()
@@ -102,28 +86,27 @@ def player_info_command(message, client, args):
         player_id = get_player_id(player)
         info = get_player_info(player_id)
 
-        template = 'Name: {}\n' \
-                   'Team: {}\n' \
-                   'College/Country: {}\n' \
-                   '{} season stats: {} PTS - {} REB - {} AST\n' \
-                   'Position: {}\n' \
-                   'Years active: {}\n' \
-                   'Height: {}\n' \
-                   'Year drafted: {}\n'
+        embed = discord.Embed(
+            title=info['player_name'],
+            description='{} - {}'.format(info['team'], info['position']),
+            color=discord.Color.blue()
+        )
 
-        out = template.format(info['player_name'],
-                              info['team'],
-                              info['college'],
-                              info['current_season'],
-                              info['points'],
-                              info['rebounds'],
-                              info['assists'],
-                              info['position'],
-                              info['years_active'],
-                              info['height'],
-                              info['year_drafted'])
+        embed_dict = dict()
+        embed_dict['{} statistics (PTS/REB/AST):'.format(info['current_season'])] = \
+            '{}/{}/{}'.format(info['points'], info['rebounds'], info['assists'])
+        embed_dict['College:'] = '{}'.format(info['college'])
+        embed_dict['Year drafted:'] = '{}'.format(info['year_drafted'])
+        embed_dict['Years Active:'] = '{}'.format(info['years_active'])
 
-        return out
+        for i in embed_dict:
+            embed.add_field(name=i, value=embed_dict[i], inline=False)
+
+        embed.set_thumbnail(
+            url=Config.NBA_IMAGE_URL + '{}.png'.format(player_id)
+        )
+
+        return embed
     except Exception as e:
         print(e)
 
@@ -133,34 +116,8 @@ ch.add_command({
     'function': player_info_command,
     'args_num': 2,
     'args_name': ['FirstName LastName'],
-    'description': 'Basic player information'
-})
-
-
-def embed(message, client, args):
-    try:
-        embed = discord.Embed(
-            title='Title',
-            description='Embed test',
-            color=discord.Color.blue()
-        )
-
-        embed.set_footer(text='This is a footer')
-        embed.add_field(name='Field name', value='Field value', inline=False)
-        embed.add_field(name='field name 2', value='value 2', inline=True)
-        embed.add_field(name='name 3', value='value 3', inline=True)
-
-        return embed
-    except Exception as e:
-        print(e)
-
-
-ch.add_command({
-    'trigger': '!embed',
-    'function': embed,
-    'args_num': 0,
-    'args_name': [],
-    'description': 'Embed testing'
+    'description': 'Basic player information',
+    'is_embed': True
 })
 
 
@@ -175,17 +132,13 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-    # if the message is from the bot itself ignore it
     if message.author == client.user:
         pass
     else:
-        # try to evaluate with the command handler
         try:
             await ch.command_handler(message)
-        # message doesn't contain a command trigger
         except TypeError as e:
             pass
-        # generic python error
         except Exception as e:
             print(e)
 
