@@ -1,8 +1,7 @@
 from config import Config
-from api import get_player_info, get_player_id, get_players
+from api import get_player_info, get_player_id, get_players, get_games_today
 import discord
-import requests
-import json
+from datetime import datetime as dt
 import logging
 
 logger = logging.getLogger('discord')
@@ -10,6 +9,14 @@ logger.setLevel(logging.DEBUG)
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 logger.addHandler(handler)
+
+
+def suffix(d):
+    return 'th' if 11<=d<=13 else {1:'st',2:'nd',3:'rd'}.get(d%10, 'th')
+
+
+def custom_strftime(format, t):
+    return t.strftime(format).replace('{S}', str(t.day) + suffix(t.day))
 
 
 class CommandHandler:
@@ -58,7 +65,9 @@ def commands_command(message, client, args):
         for command in ch.commands:
             coms += '{}.) {} : {}\n'.format(count, command['trigger'], command['description'])
             count += 1
+
         return coms
+
     except Exception as e:
         print(e)
 
@@ -68,7 +77,8 @@ ch.add_command({
     'function': commands_command,
     'args_num': 0,
     'args_name': [],
-    'description': 'Prints a list of all the commands.'
+    'description': 'Prints a list of all the commands.',
+    'is_embed': False
 })
 
 
@@ -95,7 +105,7 @@ def player_info_command(message, client, args):
         embed_dict = dict()
         embed_dict['{} statistics (PTS/REB/AST):'.format(info['current_season'])] = \
             '{}/{}/{}'.format(info['points'], info['rebounds'], info['assists'])
-        embed_dict['College:'] = '{}'.format(info['college'])
+        embed_dict['School/Country:'] = '{}'.format(info['college'])
         embed_dict['Year drafted:'] = '{}'.format(info['year_drafted'])
         embed_dict['Years Active:'] = '{}'.format(info['years_active'])
 
@@ -107,6 +117,7 @@ def player_info_command(message, client, args):
         )
 
         return embed
+
     except Exception as e:
         print(e)
 
@@ -117,6 +128,35 @@ ch.add_command({
     'args_num': 2,
     'args_name': ['FirstName LastName'],
     'description': 'Basic player information',
+    'is_embed': True
+})
+
+
+def games_today_command(message, client, args):
+    try:
+        games_today = get_games_today()
+
+        embed = discord.Embed(
+            title=custom_strftime('**%B {S}, %Y**', dt.now()),
+            description='\u200b',
+            color=discord.Color.blue()
+        )
+
+        for i in games_today:
+            embed.add_field(name='{} @ {}'.format(i['VISITOR_TEAM'], i['HOME_TEAM']), value='(12-15) - (15-15)', inline=False)
+
+        return embed
+
+    except Exception as e:
+        print(e)
+
+
+ch.add_command({
+    'trigger': '!games',
+    'function': games_today_command,
+    'args_num': 0,
+    'args_name': [],
+    'description': 'Lists today\'s scheduled games',
     'is_embed': True
 })
 

@@ -1,11 +1,9 @@
 from api import *
 from pprint import pprint
+from datetime import datetime as dt
 
-player = 'LeBron James'
-id = get_player_id(player)
-awards = get_player_awards(id)
 
-pprint(awards)
+get_games_today()
 
 
 """
