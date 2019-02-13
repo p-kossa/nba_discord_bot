@@ -137,13 +137,15 @@ def games_today_command(message, client, args):
         games_today = get_games_today()
 
         embed = discord.Embed(
-            title=custom_strftime('**%B {S}, %Y**', dt.now()),
-            description='\u200b',
+            title=custom_strftime('**%B {S}, %Y**', dt.now()),  # Month_name DD, YYYY
+            description='\u200b',  # zero width space
             color=discord.Color.blue()
         )
 
         for i in games_today:
-            embed.add_field(name='{} @ {}'.format(i['VISITOR_TEAM'], i['HOME_TEAM']), value='(12-15) - (15-15)', inline=False)
+            embed.add_field(name='{} @ {}'.format(i['VISITOR_TEAM'], i['HOME_TEAM']),
+                            value='({}) - ({})'.format(i['VISITOR_TEAM_RECORD'], i['HOME_TEAM_RECORD']),
+                            inline=False)
 
         return embed
 

@@ -1,10 +1,11 @@
 from nba_api.stats.static import teams, players
 from nba_api.stats.endpoints import playercareerstats, \
     commonplayerinfo, playerawards, scoreboard, \
-    boxscoresummaryv2, teamdetails
+    boxscoresummaryv2, teamdetails, leaguestandings
 from objectpath import *
 import json
 from pprint import pprint
+from config import Config
 
 
 def get_teams() -> list:
@@ -18,8 +19,8 @@ def get_teams() -> list:
     all_teams = teams.get_teams()
     keys_to_pop = ['state', 'year_founded']
 
-    for i in range(len(teams)):
-        all_teams = {x: teams[i].pop(x) for x in keys_to_pop}
+    # for i in range(len(teams)):
+    #     all_teams = {x: teams[i].pop(x) for x in keys_to_pop}
 
     return all_teams
 
@@ -71,18 +72,30 @@ def get_games_today() -> list:
     games_today = games_tree.execute("$.LastMeeting")
 
     games_today_teams = list()
+    team_records = get_team_records()
     for i in range(len(games_today)):
         data = {
             'HOME_TEAM': games_today[i]['LAST_GAME_HOME_TEAM_NAME'],
-            'VISITOR_TEAM': games_today[i]['LAST_GAME_VISITOR_TEAM_NAME']
+            'VISITOR_TEAM': games_today[i]['LAST_GAME_VISITOR_TEAM_NAME'],
+            'HOME_TEAM_RECORD': team_records[games_today[i]['LAST_GAME_HOME_TEAM_NAME']],
+            'VISITOR_TEAM_RECORD': team_records[games_today[i]['LAST_GAME_VISITOR_TEAM_NAME']]
         }
         games_today_teams.append(data)
 
     return games_today_teams
 
 
-def get_team_records():
-    pass
+def get_team_records() -> dict:
+    team_records = leaguestandings.LeagueStandings(season=Config.NBA_CURRENT_SEASON, season_type='Regular Season')
+    team_records_tree = Tree(json.loads(team_records.get_normalized_json()))
+    team_records = team_records_tree.execute("$.Standings")
+
+    data = dict()
+    for i in range(len(team_records)):
+        data[team_records_tree.execute("$.Standings[{}].TeamName".format(i))] = \
+            team_records_tree.execute("$.Standings[{}].Record".format(i))
+
+    return data
 
 
 def get_standings():
