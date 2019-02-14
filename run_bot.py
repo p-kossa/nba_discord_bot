@@ -93,28 +93,31 @@ def player_info_command(message, client, args):
     """
     try:
         player = ' '.join(args)
-        player_id = get_player_id(player)
+        # to-do: mispelling player names returns 400, need to add something for this
+        try:
+            player_id = get_player_id(player)
+        except Exception as e:
+            print("hello {}".format(e))
+
         info = get_player_info(player_id)
 
         embed = discord.Embed(
-            title=info['player_name'],
-            description='{} - {}'.format(info['team'], info['position']),
-            color=discord.Color.blue()
+            title='**{}**'.format(info[0]['PLAYER_NAME']),
+            description='{} - {}'.format(info[0]['TEAM'], info[0]['POS']),
+            color=discord.Color.blue()  # to-do: add functionality for color based on teams
         )
 
-        embed_dict = dict()
-        embed_dict['{} statistics (PTS/REB/AST):'.format(info['current_season'])] = \
-            '{}/{}/{}'.format(info['points'], info['rebounds'], info['assists'])
-        embed_dict['School/Country:'] = '{}'.format(info['college'])
-        embed_dict['Year drafted:'] = '{}'.format(info['year_drafted'])
-        embed_dict['Years Active:'] = '{}'.format(info['years_active'])
-
-        for i in embed_dict:
-            embed.add_field(name=i, value=embed_dict[i], inline=False)
-
-        embed.set_thumbnail(
-            url=Config.NBA_IMAGE_URL + '{}.png'.format(player_id)
-        )
+        embed.add_field(name='{} Statistics (PTS/REB/AST):'.format(info[0]['CURRENT_SEASON']),
+                        value='{}/{}/{}'.format(info[0]['PTS'], info[0]['REB'], info[0]['AST']),
+                        inline=False)
+        embed.add_field(name='Height/Weight:', value='{} - {} lbs'.format(info[0]['HEIGHT'], info[0]['WEIGHT']))
+        embed.add_field(name='School/Country:', value=info[0]['SCHOOL'], inline=False)
+        embed.add_field(name='Year Drafted:',
+                        value='{} - Rd: {} Pick: {}'.format(info[0]['YEAR_DRAFTED'],
+                                                            info[0]['DRAFT_RD'],
+                                                            info[0]['DRAFT_PICK']))
+        embed.add_field(name='Years Active:', value=info[0]['YEARS_ACTIVE'])
+        embed.set_thumbnail(url=Config.NBA_IMAGE_URL + '{}.png'.format(player_id))
 
         return embed
 

@@ -3,8 +3,7 @@ from pprint import pprint
 from datetime import datetime as dt
 
 
-pprint(get_games_today())
-# pprint(get_team_records())
+pprint(get_player_info(2544))
 
 """
 TO DO: 

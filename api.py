@@ -17,10 +17,6 @@ def get_teams() -> list:
     :return: list
     """
     all_teams = teams.get_teams()
-    keys_to_pop = ['state', 'year_founded']
-
-    # for i in range(len(teams)):
-    #     all_teams = {x: teams[i].pop(x) for x in keys_to_pop}
 
     return all_teams
 
@@ -34,31 +30,40 @@ def get_players() -> list:
     return players.get_players()
 
 
-def get_player_info(player_id: int) -> dict:
+def get_player_info(player_id: int) -> list:
     """
     Uses nba_api to get career stats for given player argument
 
-    :param player_id:
-    :return:
+    :param player_id: Player id from nba_api
+    :return: list of a single dictionary with player information
     """
-    data = dict()
-    career = commonplayerinfo.CommonPlayerInfo(player_id=player_id)
-    career_tree = Tree(json.loads(career.get_normalized_json()))
-    team_city = career_tree.execute("$.CommonPlayerInfo[0].TEAM_CITY")
-    team_name = career_tree.execute("$.CommonPlayerInfo[0].TEAM_NAME")
-    data['team'] = team_city + ' ' + team_name
-    data['player_name'] = career_tree.execute("$.CommonPlayerInfo[0].DISPLAY_FIRST_LAST")
-    data['college'] = career_tree.execute("$.CommonPlayerInfo[0].SCHOOL")
-    data['position'] = career_tree.execute("$.CommonPlayerInfo[0].POSITION")
-    data['years_active'] = career_tree.execute("$.CommonPlayerInfo[0].SEASON_EXP")
-    data['height'] = career_tree.execute("$.CommonPlayerInfo[0].HEIGHT")
-    data['year_drafted'] = career_tree.execute("$.CommonPlayerInfo[0].DRAFT_YEAR")
-    data['current_season'] = career_tree.execute("$.PlayerHeadlineStats[0].TimeFrame")
-    data['points'] = career_tree.execute("$.PlayerHeadlineStats[0].PTS")
-    data['assists'] = career_tree.execute("$.PlayerHeadlineStats[0].AST")
-    data['rebounds'] = career_tree.execute("$.PlayerHeadlineStats[0].REB")
+    # to-do: shooting pct%, team colors for embed
 
-    return data
+    player = list()
+    player_info = commonplayerinfo.CommonPlayerInfo(player_id=player_id)
+    player_info_tree = Tree(json.loads(player_info.get_normalized_json()))
+    player_info_tree_top = player_info_tree.execute("$.CommonPlayerInfo")
+    player_info_tree_top_two = player_info_tree.execute("$.PlayerHeadlineStats")
+    for i in range(len(player_info_tree_top)):
+        data = {
+            'TEAM': player_info_tree_top[i]['TEAM_CITY'] + ' ' + player_info_tree_top[i]['TEAM_NAME'],
+            'PLAYER_NAME': player_info_tree_top[i]['DISPLAY_FIRST_LAST'],
+            'SCHOOL': player_info_tree_top[i]['SCHOOL'],
+            'POS': player_info_tree_top[i]['POSITION'],
+            'YEARS_ACTIVE': player_info_tree_top[i]['SEASON_EXP'],
+            'HEIGHT': player_info_tree_top[i]['HEIGHT'],
+            'WEIGHT': player_info_tree_top[i]['WEIGHT'],
+            'YEAR_DRAFTED': player_info_tree_top[i]['DRAFT_YEAR'],
+            'DRAFT_RD': player_info_tree_top[i]['DRAFT_ROUND'],
+            'DRAFT_PICK': player_info_tree_top[i]['DRAFT_NUMBER'],
+            'CURRENT_SEASON': player_info_tree_top_two[i]['TimeFrame'],
+            'PTS': player_info_tree_top_two[i]['PTS'],
+            'AST': player_info_tree_top_two[i]['AST'],
+            'REB': player_info_tree_top_two[i]['REB']
+        }
+        player.append(data)
+
+    return player
 
 
 def get_games_today() -> list:
