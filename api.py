@@ -7,6 +7,8 @@ import json
 from pprint import pprint
 from config import Config
 
+# git test
+
 
 def get_teams() -> list:
     """
