@@ -1,13 +1,14 @@
 from nba_api.stats.static import teams, players
 from nba_api.stats.endpoints import playercareerstats, \
     commonplayerinfo, playerawards, scoreboard, \
-    boxscoresummaryv2, teamdetails, leaguestandings
+    boxscoresummaryv2, teamdetails, leaguestandings, scoreboardv2
 from objectpath import *
 import json
+from datetime import datetime, timedelta
 from pprint import pprint
 from config import Config
 
-# git test
+# to do: tip off times/final scores
 
 
 def get_teams() -> list:
@@ -74,7 +75,7 @@ def get_games_today() -> list:
 
     :return: list of game_ids
     """
-    games = scoreboard.Scoreboard()
+    games = scoreboardv2.ScoreboardV2()  # to do: option for game dates
     games_tree = Tree(json.loads(games.get_normalized_json()))
     games_today = games_tree.execute("$.LastMeeting")
 
@@ -90,6 +91,24 @@ def get_games_today() -> list:
         games_today_teams.append(data)
 
     return games_today_teams
+
+
+def get_games_results() -> list:
+    games = scoreboardv2.ScoreboardV2(game_date=Config.YESTERDAY)
+    games_tree = Tree(json.loads(games.get_normalized_json()))
+    games_yesterday = games_tree.execute("$.LineScore")
+
+    results = list()
+    for i in range(0, len(games_yesterday), 2):
+        data = {
+            'AWAY_TEAM': games_yesterday[i]['TEAM_ABBREVIATION'],
+            'AWAY_POINTS': games_yesterday[i]['PTS'],
+            'HOME_TEAM': games_yesterday[i+1]['TEAM_ABBREVIATION'],
+            'HOME_POINTS': games_yesterday[i+1]['PTS']
+        }
+        results.append(data)
+
+    return results
 
 
 def get_team_records() -> dict:

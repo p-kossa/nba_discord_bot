@@ -1,5 +1,5 @@
 from config import Config
-from api import get_player_info, get_player_id, get_players, get_games_today
+from api import get_player_info, get_player_id, get_players, get_games_today, get_games_results
 import discord
 from datetime import datetime as dt
 import logging
@@ -162,6 +162,37 @@ ch.add_command({
     'args_num': 0,
     'args_name': [],
     'description': 'Lists today\'s scheduled games',
+    'is_embed': True
+})
+
+
+def results_command(message, client, args):
+    try:
+        results = get_games_results()
+
+        embed = discord.Embed(
+            title='Results for {}'.format(Config.YESTERDAY),
+            description='\u200b',
+            color=discord.Color.blue()
+        )
+
+        for i in results:
+            embed.add_field(name='{} @ {}'.format(i['AWAY_TEAM'], i['HOME_TEAM']),
+                            value='{} - {}'.format(i['AWAY_POINTS'], i['HOME_POINTS']),
+                            inline=False)
+
+        return embed
+
+    except Exception as e:
+        print(e)
+
+
+ch.add_command({
+    'trigger': '!results',
+    'function': results_command,
+    'args_num': 0,
+    'args_name': [],
+    'description': 'Lists game results from yesterday',
     'is_embed': True
 })
 
