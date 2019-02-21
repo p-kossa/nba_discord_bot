@@ -12,7 +12,7 @@ logger.addHandler(handler)
 
 
 def suffix(d):
-    return 'th' if 11<=d<=13 else {1:'st',2:'nd',3:'rd'}.get(d%10, 'th')
+    return 'th' if 11 <= d <= 13 else {1: 'st', 2: 'nd', 3: 'rd'}.get(d % 10, 'th')
 
 
 def custom_strftime(format, t):
@@ -141,7 +141,7 @@ def games_today_command(message, client, args):
 
         embed = discord.Embed(
             title=custom_strftime('**%B {S}, %Y**', dt.now()),  # Month_name DD, YYYY
-            description='\u200b',  # zero width space
+            description='\u200b',
             color=discord.Color.blue()
         )
 

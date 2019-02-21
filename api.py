@@ -1,7 +1,7 @@
 from nba_api.stats.static import teams, players
 from nba_api.stats.endpoints import playercareerstats, \
     commonplayerinfo, playerawards, scoreboard, \
-    boxscoresummaryv2, teamdetails, leaguestandings, scoreboardv2
+    boxscoresummaryv2, teamdetails, leaguestandings, scoreboardv2, playerprofilev2
 from objectpath import *
 import json
 from datetime import datetime, timedelta
@@ -45,28 +45,51 @@ def get_player_info(player_id: int) -> list:
     player = list()
     player_info = commonplayerinfo.CommonPlayerInfo(player_id=player_id)
     player_info_tree = Tree(json.loads(player_info.get_normalized_json()))
-    player_info_tree_top = player_info_tree.execute("$.CommonPlayerInfo")
-    player_info_tree_top_two = player_info_tree.execute("$.PlayerHeadlineStats")
-    for i in range(len(player_info_tree_top)):
+    common = player_info_tree.execute("$.CommonPlayerInfo")
+    headline = player_info_tree.execute("$.PlayerHeadlineStats")
+
+    for i in range(len(common)):
         data = {
-            'TEAM': player_info_tree_top[i]['TEAM_CITY'] + ' ' + player_info_tree_top[i]['TEAM_NAME'],
-            'PLAYER_NAME': player_info_tree_top[i]['DISPLAY_FIRST_LAST'],
-            'SCHOOL': player_info_tree_top[i]['SCHOOL'],
-            'POS': player_info_tree_top[i]['POSITION'],
-            'YEARS_ACTIVE': player_info_tree_top[i]['SEASON_EXP'],
-            'HEIGHT': player_info_tree_top[i]['HEIGHT'],
-            'WEIGHT': player_info_tree_top[i]['WEIGHT'],
-            'YEAR_DRAFTED': player_info_tree_top[i]['DRAFT_YEAR'],
-            'DRAFT_RD': player_info_tree_top[i]['DRAFT_ROUND'],
-            'DRAFT_PICK': player_info_tree_top[i]['DRAFT_NUMBER'],
-            'CURRENT_SEASON': player_info_tree_top_two[i]['TimeFrame'],
-            'PTS': player_info_tree_top_two[i]['PTS'],
-            'AST': player_info_tree_top_two[i]['AST'],
-            'REB': player_info_tree_top_two[i]['REB']
+            'TEAM': common[i]['TEAM_CITY'] + ' ' + common[i]['TEAM_NAME'],
+            'PLAYER_NAME': common[i]['DISPLAY_FIRST_LAST'],
+            'SCHOOL': common[i]['SCHOOL'],
+            'POS': common[i]['POSITION'],
+            'YEARS_ACTIVE': common[i]['SEASON_EXP'],
+            'HEIGHT': common[i]['HEIGHT'],
+            'WEIGHT': common[i]['WEIGHT'],
+            'YEAR_DRAFTED': common[i]['DRAFT_YEAR'],
+            'DRAFT_RD': common[i]['DRAFT_ROUND'],
+            'DRAFT_PICK': common[i]['DRAFT_NUMBER'],
+            'CURRENT_SEASON': headline[i]['TimeFrame'],
+            'PTS': headline[i]['PTS'],
+            'AST': headline[i]['AST'],
+            'REB': headline[i]['REB']
         }
         player.append(data)
 
     return player
+
+
+def get_player_info_detailed(player_id: int) -> list:
+
+    player = list()
+    player_info = playerprofilev2.PlayerProfileV2(player_id=player_id)
+    player_info_tree = Tree(json.loads(player_info.get_normalized_json()))
+    career_highs = player_info_tree.execute("$.CareerHighs")
+
+    if career_highs[0]['STAT'] == 'PTS':
+        data = {
+            'PTS': career_highs[0]['STAT_VALUE'],
+            'DATE': career_highs[0]['GAME_DATE'],
+            'OPP': career_highs[0]['VS_TEAM_NAME']
+        }
+    player.append(data)
+
+    return player
+
+
+def get_player_awards(player_id: int):
+    pass
 
 
 def get_games_today() -> list:
@@ -94,6 +117,11 @@ def get_games_today() -> list:
 
 
 def get_games_results() -> list:
+    """
+    Gets game results from given date (right now, only 'yesterday')
+
+    :return: list of game results
+    """
     games = scoreboardv2.ScoreboardV2(game_date=Config.YESTERDAY)
     games_tree = Tree(json.loads(games.get_normalized_json()))
     games_yesterday = games_tree.execute("$.LineScore")
@@ -112,6 +140,11 @@ def get_games_results() -> list:
 
 
 def get_team_records() -> dict:
+    """
+    Gets current win/loss records for each team
+
+    :return: dict of win/loss records for each team
+    """
     team_records = leaguestandings.LeagueStandings(season=Config.NBA_CURRENT_SEASON, season_type='Regular Season')
     team_records_tree = Tree(json.loads(team_records.get_normalized_json()))
     team_records = team_records_tree.execute("$.Standings")
@@ -129,6 +162,12 @@ def get_standings():
 
 
 def get_player_id(p: str) -> int:
+    """
+    Gets a player_id for given player argument
+
+    :param p: player name
+    :return: player_id
+    """
     all_players = get_players()
     p = [player for player in all_players if player['full_name'] == p][0]
 
