@@ -28,4 +28,13 @@ class Config:
                   'Nuggets': ':nuggets:641281932310741003',
                   'Bucks': ':bucks:641280570294534155',
                   'Thunder': ':thunder:641285545770614794',
-                  'Suns': ':suns:641303412004225030'}
+                  'Suns': ':suns:641303412004225030',
+                  'Clippers': ':clippers:641283329555038248',
+                  '76ers': ':sixers:641277786056556554', # not sure about this one
+                  'Heat': ':heat:641283349033385985',
+                  'Hawks': ':hawks:641281691570143242',
+                  'Jazz': ':jazz:641281657046827018',
+                  'Hornets': ':hornets:641280701190242323',
+                  'Magic': ':magic:641281866007314442',
+                  'Kings': ':kings:641281804397182986',
+                  'Timberwolves': ':timberwolves:641285499604041729'}

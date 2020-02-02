@@ -2,7 +2,6 @@ from api import get_player_info, get_player_id, get_players, get_games_today, ge
 from config import Config
 from datetime import datetime as dt
 
-import discord
 from discord.ext import commands
 
 
